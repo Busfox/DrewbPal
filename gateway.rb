@@ -2,6 +2,7 @@ require 'dotenv'
 require 'sinatra'
 require 'shopify_api'
 require 'httparty'
+require 'sinatra/bootstrap'
 require 'pry'
 
 class DrewbPal < Sinatra::Application
@@ -15,7 +16,7 @@ class DrewbPal < Sinatra::Application
 		OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha256'), 'iU44RWxeik', message)
 	end
 
-	get '/drewbpal' do
+	post '/drewbpal' do
 		erb :index
 	end
 
