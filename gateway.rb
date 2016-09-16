@@ -4,7 +4,7 @@ require 'shopify_api'
 require 'httparty'
 require 'pry'
 
-class DrewbPal < Sinatra::Base
+class DrewbPal < Sinatra::Application
 
 	def fields
 		params = request.params.select {|k,v| k.start_with? 'x_'}
@@ -13,6 +13,10 @@ class DrewbPal < Sinatra::Base
 	def sign(fields)
 		message = fields.sort.join
 		OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha256'), 'iU44RWxeik', message)
+	end
+
+	get '/drewbpal' do
+		erb :index
 	end
 
 	post '/pay' do
@@ -32,7 +36,7 @@ class DrewbPal < Sinatra::Base
 				'x_amount' 				=> fields['x_amount'],
 				'x_gateway_reference' 	=> SecureRandom.hex,
 				'x_timestamp' 			=> Time.now.utc.iso8601,
-				'x_result' 				=> 'completed'
+				'x_result' 				=> 'complete'
 			}
 			payload['x_signature'] = sign(payload)
 			response = HTTParty.post(fields['x_url_callback'], body: payload)
@@ -40,7 +44,7 @@ class DrewbPal < Sinatra::Base
 			puts response.code
 			if response.code == 200
 				redirect redirect_url
-			else
+			elsif				
 				redirect fields['x_url_cancel']
 			end
 		else
