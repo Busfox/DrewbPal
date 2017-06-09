@@ -7,7 +7,8 @@ require 'pry'
 class DrewbPal < Sinatra::Application
 
 	def fields
-		params = request.params.select {|k,v| k.start_with? 'x_'}
+		params = request.params.select {|k,v| k.start_with?('x_','locale')}
+
 	end
 
 	def sign(fields)
@@ -20,9 +21,13 @@ class DrewbPal < Sinatra::Application
 	end
 
 	post '/pay' do
+		puts request.params
+		puts "--------------------"
 		puts fields
 		request_signature = fields['x_signature']
-		calculated_signature = sign(fields.reject{|k,v| k == 'x_signature'})
+		request.params['x_description'] = request.params['x_shop_name'] + ' - ' + request.params['x_invoice']
+		binding.pry
+		calculated_signature = sign(request.params.reject{|k,v| k == 'x_signature' || k == 'utf8' || k == 'authenticity_token' })
 		puts calculated_signature
 		puts request_signature
 		puts SecureRandom.hex
@@ -36,15 +41,18 @@ class DrewbPal < Sinatra::Application
 				'x_amount' 				=> fields['x_amount'],
 				'x_gateway_reference' 	=> SecureRandom.hex,
 				'x_timestamp' 			=> Time.now.utc.iso8601,
-				'x_result' 				=> 'complete'
+				'x_result' 				=> 'completed',
+				'x_message' 			=> 'x_message - FAILED'
 			}
+			puts payload
 			payload['x_signature'] = sign(payload)
 			response = HTTParty.post(fields['x_url_callback'], body: payload)
+			binding.pry
 			redirect_url = fields['x_url_complete'] + '?' + payload.to_query
 			puts response.code
 			if response.code == 200
 				redirect redirect_url
-			elsif				
+			elsif
 				redirect fields['x_url_cancel']
 			end
 		else
